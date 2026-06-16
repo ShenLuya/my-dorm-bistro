@@ -3,36 +3,48 @@ import streamlit as st
 import json
 import os
 from recipes_data import RECIPES
+from supabase import create_client, Client
 
 # ---------- 数据持久化 ----------
 FRIDGE_FILE = "fridge.json"
 
+# ---------- 数据库连接 ----------
+url = st.secrets["supabase"]["url"]
+key = st.secrets["supabase"]["key"]
+supabase: Client = create_client(url, key)
 
-# app.py 修改部分
+# ---------- 数据库读写函数 ----------
+def load_fridge_from_db():
+    """从 Supabase 加载冰箱数据"""
+    try:
+        response = supabase.table('fridge').select('items').execute()
+        all_items = []
+        if response.data:
+            for row in response.data:
+                if row['items']:
+                    all_items.extend(row['items'])
+        return all_items
+    except Exception as e:
+        st.error(f"加载数据失败：{e}")
+        return []
 
-# 在文件最开头，导入部分之后，添加下面这行
+def save_fridge_to_db(items):
+    """保存冰箱数据到 Supabase（只保存到 id=1）"""
+    try:
+        supabase.table('fridge').update({'items': items}).eq('id', 1).execute()
+    except Exception as e:
+        st.error(f"保存数据失败：{e}")
+
+# ---------- 初始化 Session ----------
 if "fridge" not in st.session_state:
-    st.session_state.fridge = []
+    st.session_state.fridge = load_fridge_from_db()
 
-# 然后删掉原来的 load_fridge 和 save_fridge 函数
-# 用下面这两个新函数替换：
-
-def load_fridge():
-    """从内存（session_state）加载冰箱数据"""
-    return st.session_state.fridge
-
-def save_fridge(items):
-    """保存冰箱数据到内存（session_state）"""
-    st.session_state.fridge = items
-
-
-# ---------- 推荐逻辑（模糊匹配 + 部分匹配） ----------
+# ---------- 推荐逻辑 ----------
 def is_ingredient_available(recipe_ing, user_ings):
     for user_ing in user_ings:
         if recipe_ing in user_ing or user_ing in recipe_ing:
             return True
     return False
-
 
 def recommend_recipes(user_items):
     full_matches = []
@@ -52,11 +64,6 @@ def recommend_recipes(user_items):
 
     partial_matches.sort(key=lambda x: len(x[1]))
     return full_matches, partial_matches
-
-
-# ---------- 初始化 Session 状态 ----------
-if "fridge" not in st.session_state:
-    st.session_state.fridge = load_fridge()
 
 # ============================================
 # 页面布局
@@ -78,7 +85,7 @@ with col2:
             item = new_item.strip()
             if item not in st.session_state.fridge:
                 st.session_state.fridge.append(item)
-                save_fridge(st.session_state.fridge)
+                save_fridge_to_db(st.session_state.fridge)
                 st.success(f"✅ 已添加 {item}")
                 st.rerun()
             else:
@@ -86,17 +93,16 @@ with col2:
         else:
             st.error("请输入食材名称")
 
-# 显示当前冰箱列表（每个食材带删除按钮，独立显示，不用逗号）
+# 显示当前冰箱列表
 if st.session_state.fridge:
     st.write("📦 当前存有：")
-    # 用网格显示，每行4个
     cols = st.columns(4)
     for idx, item in enumerate(st.session_state.fridge):
         col_idx = idx % 4
         with cols[col_idx]:
             if st.button(f"❌ {item}", key=f"del_{item}"):
                 st.session_state.fridge.remove(item)
-                save_fridge(st.session_state.fridge)
+                save_fridge_to_db(st.session_state.fridge)
                 st.rerun()
 else:
     st.info("冰箱是空的，快去添加食材吧！")
@@ -104,7 +110,7 @@ else:
 # 清空按钮
 if st.button("🗑️ 清空冰箱"):
     st.session_state.fridge.clear()
-    save_fridge(st.session_state.fridge)
+    save_fridge_to_db(st.session_state.fridge)
     st.rerun()
 
 st.divider()
@@ -118,12 +124,10 @@ if st.button("✨ 根据冰箱推荐菜谱", use_container_width=True):
     else:
         full, partial = recommend_recipes(st.session_state.fridge)
 
-        # 显示完全匹配
         if full:
             st.success(f"✅ 完全可以做（{len(full)}道）")
             for r in full:
                 with st.expander(f"{r['id']} {r['name']}（{r['time_level']}，{r['equipment'][0]}）"):
-                    # 用 • 逐行显示食材，不用逗号
                     st.write("📦 需要食材：")
                     for ing in r["ingredients"]:
                         st.write(f"  • {ing}")
@@ -131,14 +135,12 @@ if st.button("✨ 根据冰箱推荐菜谱", use_container_width=True):
         else:
             st.info("😅 没有能完全匹配的菜，看看下面还缺什么吧")
 
-        # 显示部分匹配
         if partial:
             st.warning(f"🔍 差一点点就能做（{len(partial)}道），按缺少数量从少到多排列：")
             for r, missing in partial[:15]:
                 with st.expander(f"{r['id']} {r['name']}（缺少 {len(missing)} 样）"):
                     st.write("📦 需要食材：")
                     for ing in r["ingredients"]:
-                        # 如果这个食材在缺失列表里，用红色标记
                         if ing in missing:
                             st.write(f"  • ❌ {ing}（缺少）")
                         else:
@@ -150,13 +152,13 @@ if st.button("✨ 根据冰箱推荐菜谱", use_container_width=True):
             st.balloons()
             st.success("🎉 你冰箱里的东西太全了！所有菜都能做！")
 
-# ---------- 侧边栏辅助信息 ----------
+# ---------- 侧边栏 ----------
 with st.sidebar:
     st.header("📋 小贴士")
     st.markdown("""
+    - **永久记忆**：数据存在 Supabase 云端数据库。
     - **模糊匹配**：输入“牛肉片”能匹配到需要“牛肉”的菜。
     - **部分推荐**：即使缺食材也会列出，告诉你缺什么。
-    - **数据持久化**：关闭页面再打开，冰箱内容还在。
     """)
 
     if st.button("📊 查看统计"):
@@ -170,4 +172,4 @@ with st.sidebar:
             st.write(f"  - {t}：{count} 道")
 
     st.divider()
-    st.caption("数据保存在同目录的 fridge.json")
+    st.caption("数据保存在 Supabase 云端数据库")
