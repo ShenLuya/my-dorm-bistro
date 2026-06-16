@@ -29,11 +29,13 @@ def load_fridge_from_db():
         return []
 
 def save_fridge_to_db(items):
-    """保存冰箱数据到 Supabase（只保存到 id=1）"""
     try:
-        supabase.table('fridge').update({'items': items}).eq('id', 1).execute()
+        # 用 upsert 替代 update，确保写入
+        supabase.table('fridge').upsert({'id': 1, 'items': items}).execute()
+        st.success(f"✅ 数据已保存到数据库：{items}")
     except Exception as e:
-        st.error(f"保存数据失败：{e}")
+        st.error(f"❌ 保存失败：{e}")
+        st.write(f"错误详情：{e}")
 
 # ---------- 初始化 Session ----------
 if "fridge" not in st.session_state:
