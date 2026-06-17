@@ -10,7 +10,6 @@ supabase: Client = create_client(url, key)
 
 # ---------- 数据库读写函数 ----------
 def load_fridge_from_db():
-    """从 Supabase 加载冰箱数据（只取 id=1 的行）"""
     try:
         response = supabase.table('fridge').select('items').eq('id', 1).execute()
         if response.data and len(response.data) > 0:
@@ -22,7 +21,6 @@ def load_fridge_from_db():
         return []
 
 def save_fridge_to_db(items):
-    """使用 upsert 保存（存在则更新，不存在则插入）"""
     try:
         data = {'id': 1, 'items': items}
         supabase.table('fridge').upsert(data).execute()
@@ -32,12 +30,16 @@ def save_fridge_to_db(items):
 # ---------- 初始化 Session ----------
 if "fridge" not in st.session_state:
     st.session_state.fridge = load_fridge_from_db()
-    # 如果冰箱为空（首次使用），尝试创建空行
     if not st.session_state.fridge:
         save_fridge_to_db([])
         st.session_state.fridge = load_fridge_from_db()
 
-# ---------- 推荐逻辑 ----------
+# ---------- 提取所有食材（从菜谱中） ----------
+ALL_INGREDIENTS = sorted(set(
+    ing for recipe in RECIPES for ing in recipe["ingredients"]
+))
+
+# ---------- 推荐逻辑（不变） ----------
 def is_ingredient_available(recipe_ing, user_ings):
     for user_ing in user_ings:
         if recipe_ing in user_ing or user_ing in recipe_ing:
@@ -47,19 +49,16 @@ def is_ingredient_available(recipe_ing, user_ings):
 def recommend_recipes(user_items):
     full_matches = []
     partial_matches = []
-
     for recipe in RECIPES:
         needed = recipe["ingredients"]
         missing = []
         for ing in needed:
             if not is_ingredient_available(ing, user_items):
                 missing.append(ing)
-
         if not missing:
             full_matches.append(recipe)
         else:
             partial_matches.append((recipe, missing))
-
     partial_matches.sort(key=lambda x: len(x[1]))
     return full_matches, partial_matches
 
@@ -69,47 +68,52 @@ def recommend_recipes(user_items):
 st.set_page_config(page_title="宿舍小厨房", page_icon="🍳", layout="centered")
 
 st.title("🍳 宿舍小厨房")
-st.caption("记住你的冰箱，推荐能做的菜")
+st.caption("点击食材按钮，一键管理你的冰箱")
 
-# ---------- 区域一：冰箱管理 ----------
+# ---------- 区域一：冰箱管理（点击式） ----------
 st.subheader("🧊 我的冰箱")
 
-col1, col2 = st.columns([3, 1])
-with col1:
-    new_item = st.text_input("输入食材名称（如：牛肉片）", key="input_item", placeholder="例如：鸡蛋")
-with col2:
-    if st.button("➕ 添加"):
-        if new_item and new_item.strip():
-            item = new_item.strip()
-            if item not in st.session_state.fridge:
-                st.session_state.fridge.append(item)
-                save_fridge_to_db(st.session_state.fridge)
-                st.success(f"✅ 已添加 {item}")
-                st.rerun()
-            else:
-                st.warning(f"⚠️ {item} 已经在冰箱里了")
-        else:
-            st.error("请输入食材名称")
-
-# 显示当前冰箱列表
+# 显示当前冰箱里的食材（紧凑型）
 if st.session_state.fridge:
-    st.write("📦 当前存有：")
-    cols = st.columns(4)
-    for idx, item in enumerate(st.session_state.fridge):
-        col_idx = idx % 4
-        with cols[col_idx]:
-            if st.button(f"❌ {item}", key=f"del_{item}"):
-                st.session_state.fridge.remove(item)
-                save_fridge_to_db(st.session_state.fridge)
-                st.rerun()
+    st.write("📦 当前存有：", ", ".join(st.session_state.fridge))
 else:
-    st.info("冰箱是空的，快去添加食材吧！")
+    st.info("冰箱是空的，从下面的食材库点击添加吧！")
 
-# 清空按钮
-if st.button("🗑️ 清空冰箱"):
+# 清空按钮（辅助）
+if st.button("🗑️ 清空冰箱", use_container_width=False):
     st.session_state.fridge.clear()
     save_fridge_to_db(st.session_state.fridge)
     st.rerun()
+
+st.divider()
+
+# ---------- 食材库（所有可选食材） ----------
+st.subheader("📋 食材库（点击切换）")
+st.caption("点击未选中的食材 ➕ 添加，点击已选中的食材 ➖ 移除")
+
+# 按行分列显示（每行5个）
+cols_per_row = 5
+cols = st.columns(cols_per_row)
+
+for idx, ingredient in enumerate(ALL_INGREDIENTS):
+    col_idx = idx % cols_per_row
+    with cols[col_idx]:
+        # 判断是否已在冰箱中
+        if ingredient in st.session_state.fridge:
+            button_label = f"✅ {ingredient}"
+            button_type = "primary"  # 绿色高亮
+        else:
+            button_label = f"➕ {ingredient}"
+            button_type = "secondary"
+
+        # 点击按钮触发切换
+        if st.button(button_label, key=f"btn_{ingredient}", use_container_width=True, type=button_type):
+            if ingredient in st.session_state.fridge:
+                st.session_state.fridge.remove(ingredient)
+            else:
+                st.session_state.fridge.append(ingredient)
+            save_fridge_to_db(st.session_state.fridge)
+            st.rerun()
 
 st.divider()
 
@@ -154,11 +158,10 @@ if st.button("✨ 根据冰箱推荐菜谱", use_container_width=True):
 with st.sidebar:
     st.header("📋 小贴士")
     st.markdown("""
-    - **永久记忆**：数据存在 Supabase 云端数据库。
-    - **模糊匹配**：输入“牛肉片”能匹配到需要“牛肉”的菜。
-    - **部分推荐**：即使缺食材也会列出，告诉你缺什么。
+    - **点击添加/移除**：所有食材都来自菜谱，点一下即可。
+    - **永久记忆**：数据存在 Supabase 云端。
+    - **智能推荐**：根据你的冰箱列出能做的菜。
     """)
-
     if st.button("📊 查看统计"):
         total = len(RECIPES)
         types = {}
@@ -168,6 +171,5 @@ with st.sidebar:
         st.write("分类统计：")
         for t, count in types.items():
             st.write(f"  - {t}：{count} 道")
-
     st.divider()
     st.caption("数据保存在 Supabase 云端数据库")
