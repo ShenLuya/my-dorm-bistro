@@ -1,12 +1,7 @@
 # app.py
 import streamlit as st
-import json
-import os
 from recipes_data import RECIPES
 from supabase import create_client, Client
-
-# ---------- 数据持久化 ----------
-FRIDGE_FILE = "fridge.json"
 
 # ---------- 数据库连接 ----------
 url = st.secrets["supabase"]["url"]
@@ -17,28 +12,13 @@ supabase: Client = create_client(url, key)
 def load_fridge_from_db():
     """从 Supabase 加载冰箱数据（只取 id=1 的行）"""
     try:
-        # 明确查询 id=1 的行，只取 items 字段
         response = supabase.table('fridge').select('items').eq('id', 1).execute()
-        
-        # ---------- 调试信息（部署后可查看） ----------
-        st.write("### 🐞 调试：load_fridge_from_db 执行结果")
-        st.write("完整 response 对象：", response)
-        st.write("response.data：", response.data)
-        # --------------------------------------------
-
         if response.data and len(response.data) > 0:
-            row = response.data[0]
-            items = row.get('items', [])
-            st.write("提取的 items：", items)   # 调试
-            if items is None:
-                return []
-            return items
-        else:
-            st.warning("⚠️ 数据库中没有 id=1 的记录，将返回空列表")
-            return []
+            items = response.data[0].get('items', [])
+            return items if items is not None else []
+        return []
     except Exception as e:
         st.error(f"加载数据失败：{e}")
-        st.write(f"错误详情：{e}")   # 调试
         return []
 
 def save_fridge_to_db(items):
@@ -46,19 +26,15 @@ def save_fridge_to_db(items):
     try:
         data = {'id': 1, 'items': items}
         supabase.table('fridge').upsert(data).execute()
-        st.success(f"✅ 数据已保存到数据库：{items}")
     except Exception as e:
-        st.error(f"❌ 保存失败：{e}")
-        st.write(f"错误详情：{e}")
+        st.error(f"保存数据失败：{e}")
 
 # ---------- 初始化 Session ----------
 if "fridge" not in st.session_state:
     st.session_state.fridge = load_fridge_from_db()
-    # 如果加载后仍为空，可主动创建一行（可选）
+    # 如果冰箱为空（首次使用），尝试创建空行
     if not st.session_state.fridge:
-        # 尝试写入一个空列表，确保行存在
         save_fridge_to_db([])
-        # 重新加载一次
         st.session_state.fridge = load_fridge_from_db()
 
 # ---------- 推荐逻辑 ----------
