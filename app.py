@@ -72,7 +72,7 @@ def recommend_recipes(user_items):
 # 页面 - 首页
 # ============================================
 def show_home():
-    st.set_page_config(page_title="宿舍小厨房", page_icon="https://github.com/ShenLuya/my-dorm-bistro/blob/main/3f1c98c1405d3ebb9cf03570b9599aeb.jpg", layout="centered")
+    st.set_page_config(page_title="宿舍小厨房", page_icon="https://raw.githubusercontent.com/ShenLuya/my-dorm-bistro/main/3f1c98c1405d3ebb9cf03570b9599aeb.jpg", layout="centered")
     st.title("🍳 宿舍小厨房")
     st.subheader("今天你想做什么？")
 
