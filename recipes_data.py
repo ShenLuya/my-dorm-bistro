@@ -36,14 +36,6 @@ RECIPES = [
     },
     {
         "id": "A5",
-        "name": "电饭煲卤鸡腿",
-        "type": "菜",
-        "time_level": "慢",
-        "ingredients": ["鸡腿", "生抽", "老抽", "八角", "桂皮", "糖"],
-        "equipment": ["电饭煲"]
-    },
-    {
-        "id": "A6",
         "name": "土豆炖牛肉块",
         "type": "菜",
         "time_level": "慢",
@@ -51,7 +43,7 @@ RECIPES = [
         "equipment": ["电饭煲"]
     },
     {
-        "id": "A7",
+        "id": "A6",
         "name": "南瓜炖排骨",
         "type": "菜",
         "time_level": "慢",
@@ -59,7 +51,7 @@ RECIPES = [
         "equipment": ["电饭煲"]
     },
     {
-        "id": "A8",
+        "id": "A7",
         "name": "鸡翅根炖土豆",
         "type": "菜",
         "time_level": "慢",
@@ -67,7 +59,7 @@ RECIPES = [
         "equipment": ["电饭煲"]
     },
     {
-        "id": "A9",
+        "id": "A8",
         "name": "萝卜炖牛腩（清汤版）",
         "type": "菜",
         "time_level": "慢",
@@ -75,7 +67,7 @@ RECIPES = [
         "equipment": ["电饭煲"]
     },
     {
-        "id": "A10",
+        "id": "A9",
         "name": "牛肉窝蛋饭",
         "type": "干饭",
         "time_level": "慢",
@@ -83,7 +75,7 @@ RECIPES = [
         "equipment": ["电饭煲"]
     },
     {
-        "id": "A11",
+        "id": "A10",
         "name": "番茄鱼丸焖饭",
         "type": "干饭",
         "time_level": "慢",
@@ -91,7 +83,7 @@ RECIPES = [
         "equipment": ["电饭煲"]
     },
     {
-        "id": "A12",
+        "id": "A11",
         "name": "胡萝卜玉米牛肉焖饭",
         "type": "干饭",
         "time_level": "慢",
@@ -99,7 +91,7 @@ RECIPES = [
         "equipment": ["电饭煲"]
     },
     {
-        "id": "A13",
+        "id": "A12",
         "name": "番茄肥牛焖饭",
         "type": "干饭",
         "time_level": "慢",
@@ -107,15 +99,23 @@ RECIPES = [
         "equipment": ["电饭煲"]
     },
     {
-        "id": "A14",
-        "name": "电饭煲麻辣烫",
-        "type": "菜",
+        "id": "A13",
+        "name": "牛肉娃娃菜拌饭",
+        "type": "干饭",
         "time_level": "慢",
-        "ingredients": ["火锅底料", "牛奶", "火锅丸子", "娃娃菜"],
+        "ingredients": ["牛肉", "娃娃菜", "大米", "生抽"],
+        "equipment": ["电饭煲"]
+    },
+    {
+        "id": "A14",
+        "name": "番茄芝士焗饭",
+        "type": "干饭",
+        "time_level": "慢",
+        "ingredients": ["番茄", "芝士片", "大米", "盐"],
         "equipment": ["电饭煲"]
     },
 
-    # ===== B组 · 快手炒菜（5道） =====
+    # ===== B组 · 快手炒菜（9道） =====
     {
         "id": "B1",
         "name": "可乐鸡翅",
@@ -156,8 +156,40 @@ RECIPES = [
         "ingredients": ["牛肉片", "孜然粉", "生抽", "蒜"],
         "equipment": ["电煮锅"]
     },
+    {
+        "id": "B6",
+        "name": "番茄鸡蛋牛肉",
+        "type": "菜",
+        "time_level": "快",
+        "ingredients": ["番茄", "鸡蛋", "牛肉", "盐"],
+        "equipment": ["电煮锅"]
+    },
+    {
+        "id": "B7",
+        "name": "糖醋排骨",
+        "type": "菜",
+        "time_level": "慢",
+        "ingredients": ["排骨", "糖", "醋", "生抽"],
+        "equipment": ["电煮锅"]
+    },
+    {
+        "id": "B8",
+        "name": "手撕鸡",
+        "type": "菜",
+        "time_level": "快",
+        "ingredients": ["鸡胸肉", "生抽", "蚝油", "蒜"],
+        "equipment": ["电煮锅"]
+    },
+    {
+        "id": "B9",
+        "name": "火腿土豆片",
+        "type": "菜",
+        "time_level": "快",
+        "ingredients": ["火腿肠", "土豆", "盐"],
+        "equipment": ["电煮锅"]
+    },
 
-    # ===== C组 · 汤面（2道） =====
+    # ===== C组 · 汤面（3道） =====
     {
         "id": "C1",
         "name": "鲜肉小馄饨面",
@@ -172,6 +204,14 @@ RECIPES = [
         "type": "面",
         "time_level": "快",
         "ingredients": ["挂面", "紫菜", "鸡蛋", "虾皮", "盐"],
+        "equipment": ["电煮锅"]
+    },
+    {
+        "id": "C3",
+        "name": "番茄虾滑水扯面",
+        "type": "面",
+        "time_level": "快",
+        "ingredients": ["番茄", "虾滑", "水扯面", "盐"],
         "equipment": ["电煮锅"]
     },
 
